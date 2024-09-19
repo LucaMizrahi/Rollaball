@@ -7,68 +7,96 @@ using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
-    // Speed of the player
     public float speed = 0;
 
-    // Text component
     public TextMeshProUGUI scoreText;
-
-    // Win text component
     public GameObject winTextObject;
+    public TextMeshProUGUI timeText; // Usar o componente de texto para exibir o tempo
+    public GameObject restartButton;
+    public GameObject restartButtonBackground;
 
-    // Rigidbody component
+    public float fallLimit = -10f;
+    private Vector3 initialPosition;
+
     private Rigidbody rb;
 
-    // Score variable
     private int score;
-
-    // Movement variables along X and Y axis
     private float movementX;
     private float movementY;
 
-    // Start is called before the first frame update
+    // Timer variables
+    private float timeRemaining; // Armazena o tempo restante
+    private bool timerActive;
+
+    // Tempo limite inicial (60 segundos)
+    public float timeLimit = 60f;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         score = 0;
 
-        // Set the score text to 0
+        initialPosition = transform.position;
+
+        // Inicializa o cronômetro com o valor de tempo limite
+        timeRemaining = timeLimit;
+        timerActive = true;
+
         SetScoreText();
 
-        // Set the win text to inactive
         winTextObject.SetActive(false);
+        restartButton.SetActive(false);
+        restartButtonBackground.SetActive(false);
     }
 
-    // Functon to move the player when a move input is detected
     void OnMove(InputValue value)
     {
-        // Get the movement vector from the input value
         Vector2 movementVector = value.Get<Vector2>();
-
-        // Store the X and Y components of the movement vector
         movementX = movementVector.x;
         movementY = movementVector.y;
     }
 
-    // Function to update the score text
     void SetScoreText()
     {
         scoreText.text = "Score: " + score.ToString();
 
-        // If the score is 12 or more, display the win text
-        if (score >= 12)
+        if (score >= 13)
         {
-            winTextObject.SetActive(true);
+            EndGame(true);  // Jogador ganhou o jogo
         }
     }
 
     void FixedUpdate() 
     {
-        // Create a 3D movement vector using X and Y inputs
         Vector3 movement = new Vector3(movementX, 0.0f, movementY);
+        rb.AddForce(movement * speed);
 
-        // Apply the movement vector to the player
-        rb.AddForce(movement*speed);
+        if (transform.position.y < fallLimit)
+        {
+            RespawnPlayer();
+        }
+
+        // Atualizar o cronômetro enquanto o jogo estiver ativo
+        if (timerActive)
+        {
+            if (timeRemaining > 0)
+            {
+                timeRemaining -= Time.deltaTime;  // Reduz o tempo restante
+
+                // Calcula os minutos e segundos restantes
+                int minutes = Mathf.FloorToInt(timeRemaining / 60);
+                int seconds = Mathf.FloorToInt(timeRemaining % 60);
+
+                // Exibir o tempo no formato "00:00" (minutos:segundos)
+                timeText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+            }
+            else
+            {
+                // Se o tempo acabar, terminar o jogo
+                timeRemaining = 0;
+                EndGame(false);  // O tempo acabou, o jogador perdeu
+            }
+        }
     }
 
     void OnTriggerEnter(Collider other)
@@ -80,5 +108,35 @@ public class PlayerController : MonoBehaviour
 
             SetScoreText();
         }
+    }
+
+    // Função para reposicionar o jogador na posição inicial
+    void RespawnPlayer()
+    {
+        transform.position = initialPosition;
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+
+        Debug.Log("Jogador caiu do mapa e foi reposicionado!");
+    }
+
+    // Função para encerrar o jogo
+    void EndGame(bool won)
+    {
+        timerActive = false; // Para o cronômetro
+
+        if (won)
+        {
+            winTextObject.SetActive(true);
+            timeText.text = timeText.text;
+        }
+        else
+        {
+            // Exibir mensagem de tempo esgotado
+            timeText.text = "Tempo esgotado! Fim de jogo!";
+        }
+
+        restartButton.SetActive(true); // Ativar botão de reinício
+        restartButtonBackground.SetActive(true); // Ativar fundo do botão de reinício
     }
 }
