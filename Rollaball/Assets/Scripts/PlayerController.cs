@@ -28,6 +28,9 @@ public class PlayerController : MonoBehaviour
     private float timeRemaining; // Armazena o tempo restante
     private bool timerActive;
 
+    // Controla se o jogador pode se mover
+    private bool canMove;
+
     // Tempo limite inicial (60 segundos)
     public float timeLimit = 60f;
 
@@ -42,6 +45,9 @@ public class PlayerController : MonoBehaviour
         timeRemaining = timeLimit;
         timerActive = true;
 
+        // Inicialmente o jogador pode se mover
+        canMove = true;
+
         SetScoreText();
 
         winTextObject.SetActive(false);
@@ -51,9 +57,13 @@ public class PlayerController : MonoBehaviour
 
     void OnMove(InputValue value)
     {
-        Vector2 movementVector = value.Get<Vector2>();
-        movementX = movementVector.x;
-        movementY = movementVector.y;
+        // Só permite movimentação se o jogador puder se mover
+        if (canMove)
+        {
+            Vector2 movementVector = value.Get<Vector2>();
+            movementX = movementVector.x;
+            movementY = movementVector.y;
+        }
     }
 
     void SetScoreText()
@@ -68,8 +78,12 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate() 
     {
-        Vector3 movement = new Vector3(movementX, 0.0f, movementY);
-        rb.AddForce(movement * speed);
+        // Verifica se o jogador ainda pode se mover antes de aplicar movimento
+        if (canMove)
+        {
+            Vector3 movement = new Vector3(movementX, 0.0f, movementY);
+            rb.AddForce(movement * speed);
+        }
 
         if (transform.position.y < fallLimit)
         {
@@ -124,6 +138,11 @@ public class PlayerController : MonoBehaviour
     void EndGame(bool won)
     {
         timerActive = false; // Para o cronômetro
+        canMove = false;     // Impede o jogador de se mover
+
+        // Zera a velocidade da bola ao fim do jogo
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
 
         if (won)
         {
