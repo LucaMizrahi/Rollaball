@@ -351,6 +351,9 @@ MonoBehaviour:
   restartButtonBackground: {fileID: 207213081}
   fallLimit: -10
   timeLimit: 60
+  audioSource: {fileID: 0}
+  pickUpSound: {fileID: 8300000, guid: 13c039f07f4b4f841bc0195374df1aac, type: 3}
+  backgroundMusic: {fileID: 8300000, guid: 646279d0e9c762143af96c4b9ee27d20, type: 3}
 --- !u!114 &137586885
 MonoBehaviour:
   m_ObjectHideFlags: 0

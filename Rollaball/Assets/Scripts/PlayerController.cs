@@ -34,6 +34,16 @@ public class PlayerController : MonoBehaviour
     // Tempo limite inicial (60 segundos)
     public float timeLimit = 60f;
 
+    // Componente de som
+    public AudioSource audioSource;
+    // public AudioSource audioSourcePickUp;
+
+    // Som para captura do bloco
+    public AudioClip pickUpSound;
+
+    // Música de fundo
+    public AudioClip backgroundMusic;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -53,6 +63,14 @@ public class PlayerController : MonoBehaviour
         winTextObject.SetActive(false);
         restartButton.SetActive(false);
         restartButtonBackground.SetActive(false);
+
+        // Tocar a música de fundo se estiver configurada
+        if (audioSource != null && backgroundMusic != null)
+        {
+            audioSource.clip = backgroundMusic;
+            audioSource.loop = true;  // Faz a música de fundo tocar em loop
+            audioSource.Play();       // Toca a música de fundo
+        }
     }
 
     void OnMove(InputValue value)
@@ -120,6 +138,12 @@ public class PlayerController : MonoBehaviour
             other.gameObject.SetActive(false);
             score = score + 1;
 
+            // Toca o som de captura
+            if (audioSource != null && pickUpSound != null)
+            {
+                audioSource.PlayOneShot(pickUpSound);
+            }
+            
             SetScoreText();
         }
     }
@@ -143,6 +167,12 @@ public class PlayerController : MonoBehaviour
         // Zera a velocidade da bola ao fim do jogo
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
+
+        // Para a música de fundo quando o jogo termina
+        if(audioSource.isPlaying)
+        {
+            audioSource.Stop();
+        }
 
         if (won)
         {
