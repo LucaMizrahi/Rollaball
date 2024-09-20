@@ -1,6 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
@@ -8,10 +6,14 @@ using TMPro;
 public class PlayerController : MonoBehaviour
 {
     public float speed = 0;
+    public float jumpForce = 5f; // Força de pulo
+    public float rayDistance = 0.7f; // Distância do Raycast para detectar o chão
 
     public TextMeshProUGUI scoreText;
     public GameObject winTextObject;
-    public TextMeshProUGUI timeText; // Usar o componente de texto para exibir o tempo
+    public TextMeshProUGUI timeText;
+
+    public GameObject penaltyTextObject;
     public GameObject restartButton;
     public GameObject restartButtonBackground;
 
@@ -25,7 +27,7 @@ public class PlayerController : MonoBehaviour
     private float movementY;
 
     // Timer variables
-    private float timeRemaining; // Armazena o tempo restante
+    private float timeRemaining;
     private bool timerActive;
 
     // Controla se o jogador pode se mover
@@ -36,13 +38,15 @@ public class PlayerController : MonoBehaviour
 
     // Componente de som
     public AudioSource audioSource;
-    // public AudioSource audioSourcePickUp;
 
     // Som para captura do bloco
     public AudioClip pickUpSound;
 
     // Música de fundo
     public AudioClip backgroundMusic;
+
+    // Som para vitória
+    public AudioClip winSound;
 
     void Start()
     {
@@ -55,7 +59,6 @@ public class PlayerController : MonoBehaviour
         timeRemaining = timeLimit;
         timerActive = true;
 
-        // Inicialmente o jogador pode se mover
         canMove = true;
 
         SetScoreText();
@@ -63,6 +66,7 @@ public class PlayerController : MonoBehaviour
         winTextObject.SetActive(false);
         restartButton.SetActive(false);
         restartButtonBackground.SetActive(false);
+        penaltyTextObject.SetActive(false);
 
         // Tocar a música de fundo se estiver configurada
         if (audioSource != null && backgroundMusic != null)
@@ -75,7 +79,6 @@ public class PlayerController : MonoBehaviour
 
     void OnMove(InputValue value)
     {
-        // Só permite movimentação se o jogador puder se mover
         if (canMove)
         {
             Vector2 movementVector = value.Get<Vector2>();
@@ -84,11 +87,34 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    void Update()
+    {
+        // Verifica se a tecla espaço foi pressionada para pular
+        if (canMove && Keyboard.current.spaceKey.wasPressedThisFrame)
+        {
+            TryJump();
+        }
+    }
+
+    void TryJump()
+    {
+        // Faz um Raycast para verificar se há chão com a tag "jump" abaixo da bola
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position, Vector3.down, out hit, rayDistance))
+        {
+            if (hit.collider.CompareTag("Jump"))
+            {
+                // Aplica a força de pulo se a bola estiver no chão
+                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            }
+        }
+    }
+
     void SetScoreText()
     {
         scoreText.text = "Score: " + score.ToString();
 
-        if (score >= 13)
+        if (score >= 12)
         {
             EndGame(true);  // Jogador ganhou o jogo
         }
@@ -96,7 +122,6 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate() 
     {
-        // Verifica se o jogador ainda pode se mover antes de aplicar movimento
         if (canMove)
         {
             Vector3 movement = new Vector3(movementX, 0.0f, movementY);
@@ -108,25 +133,21 @@ public class PlayerController : MonoBehaviour
             RespawnPlayer();
         }
 
-        // Atualizar o cronômetro enquanto o jogo estiver ativo
         if (timerActive)
         {
             if (timeRemaining > 0)
             {
-                timeRemaining -= Time.deltaTime;  // Reduz o tempo restante
+                timeRemaining -= Time.deltaTime;
 
-                // Calcula os minutos e segundos restantes
                 int minutes = Mathf.FloorToInt(timeRemaining / 60);
                 int seconds = Mathf.FloorToInt(timeRemaining % 60);
 
-                // Exibir o tempo no formato "00:00" (minutos:segundos)
                 timeText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
             }
             else
             {
-                // Se o tempo acabar, terminar o jogo
                 timeRemaining = 0;
-                EndGame(false);  // O tempo acabou, o jogador perdeu
+                EndGame(false);
             }
         }
     }
@@ -143,12 +164,30 @@ public class PlayerController : MonoBehaviour
             {
                 audioSource.PlayOneShot(pickUpSound);
             }
-            
+
             SetScoreText();
+        }
+
+        if (other.gameObject.CompareTag("StaticEnemy"))
+        {
+            RespawnPlayer();
+            // Diminui o tempo em 5 segundos ao colidir com o inimigo
+            timeRemaining -= 5;
+            // Ativar o objeto de texto de penalidade
+            penaltyTextObject.SetActive(true);
+
+            // Iniciar a corrotina para esconder o texto após 5 segundos
+            StartCoroutine(HidePenaltyTextAfterDelay(2f));
         }
     }
 
-    // Função para reposicionar o jogador na posição inicial
+    IEnumerator HidePenaltyTextAfterDelay(float delay)
+    {
+        // Espera por 'delay' segundos antes de esconder o texto
+        yield return new WaitForSeconds(delay);
+        penaltyTextObject.SetActive(false); // Esconder o texto de penalidade
+    }
+
     void RespawnPlayer()
     {
         transform.position = initialPosition;
@@ -158,18 +197,16 @@ public class PlayerController : MonoBehaviour
         Debug.Log("Jogador caiu do mapa e foi reposicionado!");
     }
 
-    // Função para encerrar o jogo
     void EndGame(bool won)
     {
-        timerActive = false; // Para o cronômetro
-        canMove = false;     // Impede o jogador de se mover
+        timerActive = false;
+        canMove = false;
 
-        // Zera a velocidade da bola ao fim do jogo
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
-        // Para a música de fundo quando o jogo termina
-        if(audioSource.isPlaying)
+        // Parar a música de fundo quando o jogo acabar
+        if (audioSource.isPlaying)
         {
             audioSource.Stop();
         }
@@ -178,14 +215,14 @@ public class PlayerController : MonoBehaviour
         {
             winTextObject.SetActive(true);
             timeText.text = timeText.text;
+            audioSource.PlayOneShot(winSound);
         }
         else
         {
-            // Exibir mensagem de tempo esgotado
             timeText.text = "Tempo esgotado! Fim de jogo!";
         }
 
-        restartButton.SetActive(true); // Ativar botão de reinício
-        restartButtonBackground.SetActive(true); // Ativar fundo do botão de reinício
+        restartButton.SetActive(true);
+        restartButtonBackground.SetActive(true);
     }
 }
