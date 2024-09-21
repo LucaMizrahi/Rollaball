@@ -27,14 +27,11 @@ public class PlayerController : MonoBehaviour
     private float movementY;
 
     // Timer variables
-    private float timeRemaining;
+    private float timeRemaining = 90f;
     private bool timerActive;
 
     // Controla se o jogador pode se mover
     private bool canMove;
-
-    // Tempo limite inicial (60 segundos)
-    public float timeLimit = 60f;
 
     // Componente de som
     public AudioSource audioSource;
@@ -55,10 +52,7 @@ public class PlayerController : MonoBehaviour
 
         initialPosition = transform.position;
 
-        // Inicializa o cronômetro com o valor de tempo limite
-        timeRemaining = timeLimit;
         timerActive = true;
-
         canMove = true;
 
         SetScoreText();
@@ -67,6 +61,9 @@ public class PlayerController : MonoBehaviour
         restartButton.SetActive(false);
         restartButtonBackground.SetActive(false);
         penaltyTextObject.SetActive(false);
+
+        // Exibir o tempo inicial corretamente no UI
+        UpdateTimerDisplay();
 
         // Tocar a música de fundo se estiver configurada
         if (audioSource != null && backgroundMusic != null)
@@ -94,6 +91,20 @@ public class PlayerController : MonoBehaviour
         {
             TryJump();
         }
+
+        // Atualiza o cronômetro no UI a cada frame
+        if (timerActive && timeRemaining > 0)
+        {
+            timeRemaining -= Time.deltaTime;
+
+            // Atualiza a exibição do cronômetro no UI
+            UpdateTimerDisplay();
+        }
+        else if (timeRemaining <= 0)
+        {
+            timeRemaining = 0;
+            EndGame(false);  // Fim do jogo quando o tempo acabar
+        }
     }
 
     void TryJump()
@@ -120,7 +131,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void FixedUpdate() 
+    void FixedUpdate()
     {
         if (canMove)
         {
@@ -131,24 +142,6 @@ public class PlayerController : MonoBehaviour
         if (transform.position.y < fallLimit)
         {
             RespawnPlayer();
-        }
-
-        if (timerActive)
-        {
-            if (timeRemaining > 0)
-            {
-                timeRemaining -= Time.deltaTime;
-
-                int minutes = Mathf.FloorToInt(timeRemaining / 60);
-                int seconds = Mathf.FloorToInt(timeRemaining % 60);
-
-                timeText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
-            }
-            else
-            {
-                timeRemaining = 0;
-                EndGame(false);
-            }
         }
     }
 
@@ -224,5 +217,13 @@ public class PlayerController : MonoBehaviour
 
         restartButton.SetActive(true);
         restartButtonBackground.SetActive(true);
+    }
+
+    // Função para atualizar o cronômetro corretamente
+    void UpdateTimerDisplay()
+    {
+        int minutes = Mathf.FloorToInt(timeRemaining / 60);
+        int seconds = Mathf.FloorToInt(timeRemaining % 60);
+        timeText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
 }
