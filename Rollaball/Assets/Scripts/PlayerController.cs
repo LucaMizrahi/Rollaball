@@ -114,7 +114,7 @@ public class PlayerController : MonoBehaviour
     {
         scoreText.text = "Score: " + score.ToString();
 
-        if (score >= 12)
+        if (score >= 22)
         {
             EndGame(true);  // Jogador ganhou o jogo
         }
