@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
+using Unity.VisualScripting;
 
 public class PlayerController : MonoBehaviour
 {
@@ -27,7 +28,7 @@ public class PlayerController : MonoBehaviour
     private float movementY;
 
     // Timer variables
-    private float timeRemaining = 90f;
+    private float timeRemaining = 5f;
     private bool timerActive;
 
     // Controla se o jogador pode se mover
@@ -44,6 +45,9 @@ public class PlayerController : MonoBehaviour
 
     // Som para vitória
     public AudioClip winSound;
+
+    // Som para derrota
+    public AudioClip loseSound;
 
     void Start()
     {
@@ -125,7 +129,7 @@ public class PlayerController : MonoBehaviour
     {
         scoreText.text = "Score: " + score.ToString();
 
-        if (score >= 22)
+        if (score >= 1)
         {
             EndGame(true);  // Jogador ganhou o jogo
         }
@@ -164,13 +168,6 @@ public class PlayerController : MonoBehaviour
         if (other.gameObject.CompareTag("StaticEnemy"))
         {
             RespawnPlayer();
-            // Diminui o tempo em 5 segundos ao colidir com o inimigo
-            timeRemaining -= 5;
-            // Ativar o objeto de texto de penalidade
-            penaltyTextObject.SetActive(true);
-
-            // Iniciar a corrotina para esconder o texto após 5 segundos
-            StartCoroutine(HidePenaltyTextAfterDelay(2f));
         }
     }
 
@@ -187,11 +184,25 @@ public class PlayerController : MonoBehaviour
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
-        Debug.Log("Jogador caiu do mapa e foi reposicionado!");
+        // Diminui o tempo em 5 segundos ao cair do mapa ou colidir com o inimigo
+        timeRemaining -= 5;
+
+        // Ativar o objeto de texto de penalidade
+        penaltyTextObject.SetActive(true);
+        // Iniciar a corrotina para esconder o texto após 2 segundos
+        StartCoroutine(HidePenaltyTextAfterDelay(2f));
+
+        // Debug.Log("Jogador caiu do mapa e foi reposicionado!");
     }
 
     void EndGame(bool won)
     {
+        // Garantir que o jogo só acabe uma vez
+        if (!timerActive)
+        {
+            return;
+        }
+
         timerActive = false;
         canMove = false;
 
@@ -213,6 +224,7 @@ public class PlayerController : MonoBehaviour
         else
         {
             timeText.text = "Tempo esgotado! Fim de jogo!";
+            audioSource.PlayOneShot(loseSound);
         }
 
         restartButton.SetActive(true);
