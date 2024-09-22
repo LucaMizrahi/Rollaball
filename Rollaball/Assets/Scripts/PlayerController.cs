@@ -28,7 +28,7 @@ public class PlayerController : MonoBehaviour
     private float movementY;
 
     // Timer variables
-    private float timeRemaining = 5f;
+    private float timeRemaining = 90f;
     private bool timerActive;
 
     // Controla se o jogador pode se mover
@@ -129,7 +129,7 @@ public class PlayerController : MonoBehaviour
     {
         scoreText.text = "Score: " + score.ToString();
 
-        if (score >= 1)
+        if (score >= 22)
         {
             EndGame(true);  // Jogador ganhou o jogo
         }
@@ -178,7 +178,7 @@ public class PlayerController : MonoBehaviour
         penaltyTextObject.SetActive(false); // Esconder o texto de penalidade
     }
 
-    void RespawnPlayer()
+    public void RespawnPlayer()
     {
         transform.position = initialPosition;
         rb.velocity = Vector3.zero;
